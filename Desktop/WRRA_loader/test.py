@@ -33,9 +33,6 @@ from flask.testing import FlaskClient
 #         self.assertEqual(allocated_tasks, expected_result)
 
 
-
-
-
 class TestLoadBalancer(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
@@ -48,12 +45,21 @@ class TestLoadBalancer(unittest.TestCase):
         self.current_weight = 0
 
     def test_load_balancer(self):
-        # Simulate multiple requests to the load balancer
+        # Simulatin multiple requests to the load balancer
         for _ in range(len(self.backend_servers)):
             response = self.app.get("/")
-            self.assertEqual(response.status_code, 302)  # Ensure it redirects
-            selected_server = self.backend_servers[self.current_server]
-            expected_redirect_url = f"http://{selected_server['ip']}"
+            self.assertEqual(response.status_code, 302)
+
+            # Updation current server and current weight for the next iteratin
+            self.current_server = (self.current_server + 1) % len(self.backend_servers)
+            if self.current_server == 0:
+                self.current_weight = max(
+                    self.backend_servers, key=lambda x: x["weight"]
+                )["weight"]
+
+            expected_redirect_url = (
+                f"http://{self.backend_servers[self.current_server]['ip']}"
+            )
             self.assertEqual(response.location, expected_redirect_url)
 
 
